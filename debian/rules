@@ -1,4 +1,25 @@
 #!/usr/bin/make -f
 
+include /usr/share/dpkg/pkg-info.mk
+
 %:
-	dh $@
+	dh $@ --with maven-repo-helper
+
+override_dh_auto_build:
+	dh_auto_build -- jar update-bootstrap -Dversion=$(DEB_VERSION_UPSTREAM)
+	dh_auto_build -- clean
+	dh_auto_build -- jar
+	docbook-to-man debian/manpage.sgml >bin/javacc5.1
+
+	cp bin/javacc  bin/javacc5
+	cp bin/jjdoc   bin/jjdoc5
+	cp bin/jjtree  bin/jjtree5
+
+override_mh_install:
+	mh_install
+	rm -Rf debian/javacc5/usr/share/maven-repo/net/java/dev/javacc/javacc/5.0
+
+override_dh_auto_test:
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	dh_auto_build -- unittest
+endif
